@@ -32,7 +32,7 @@ CREATE DATABASE smpkshoppingcentre;
 CREATE TABLE `user` (
     phone VARCHAR(30) PRIMARY KEY,
     passkey VARCHAR(255),
-    type ENUM('customer', 'vendor', 'admin')
+    type ENUM('customer', 'vendor')
 );
 
 -- Create 'products' table
