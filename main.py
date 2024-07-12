@@ -9,8 +9,8 @@ import json
 root = Tk()
 root.title("SMPK Shopping Centre")
 root.iconbitmap(r"images/icon.ico")
-bgcolor = "#333"
-fgcolor = "lightgreen"
+bgcolor = "#000"
+fgcolor = "#36fc27"
 root.configure(bg=bgcolor)
 def establish():
     try:
@@ -469,13 +469,13 @@ def find(id):
         img=Image.open(r"images\cart.png" ).resize((50,50))
         img=ImageTk.PhotoImage(img)
 
-        btn=Button(scrollable_frame,image=img,command=lambda pid=data[i][0]: addtocart(pid,id),bg=bgcolor,border=0,bd=0)
+        btn=Button(scrollable_frame,image=img,command=lambda pid=data[i][0]: addtocart(pid,id),bg="wheat",border=0,bd=0)
         btn.image=img
         btn.grid(row=r,column=5)
         img=Image.open(r"images\wishlist.png").resize((50,50))
         img=ImageTk.PhotoImage(img)
 
-        btn=Button(scrollable_frame,image=img,command=lambda pid=data[i][0]: addtowishlist(pid,id),bg=bgcolor,border=0,bd=0)
+        btn=Button(scrollable_frame,image=img,command=lambda pid=data[i][0]: addtowishlist(pid,id),bg="wheat",border=0,bd=0)
         btn.image=img
         btn.grid(row=r,column=6)
         r += 1
@@ -852,7 +852,7 @@ def updatewhat():
     global id_var, name_var, main, root, data
     conn = establish()
     mycursor = conn.cursor()
-    mycursor.execute(f"SELECT `id`, `productname` FROM `products` WHERE `vendor` = 1")  # Replace 1 with your actual vendor ID
+    mycursor.execute(f"SELECT `id`, `productname` FROM `products` WHERE `vendor` = {id}")  # Replace 1 with your actual vendor ID
     data = mycursor.fetchall()
     conn.close()
     ids = [item[0] for item in data]
@@ -875,7 +875,7 @@ def deletewhat():
     global id_var, main, root, data
     conn = establish()
     mycursor = conn.cursor()
-    mycursor.execute(f"SELECT `id`, `productname` FROM `products` WHERE `vendor` = 1")  # Replace 1 with your actual vendor ID
+    mycursor.execute(f"SELECT `id`, `productname` FROM `products` WHERE `vendor` = {id}")  # Replace 1 with your actual vendor ID
     data = mycursor.fetchall()
     conn.close()
     ids = [item[0] for item in data]
@@ -890,10 +890,8 @@ def deletewhat():
     name_var = StringVar(main)
     name_var.set("select product name")
     OptionMenu(main, name_var, *names, command=update_selection).grid(row=1, column=1)
-
     Button(main, text="Delete", font="poppins 20 italic", bg=bgcolor, fg=fgcolor, border=0,
            command=lambda: deletethis(id_var.get())).grid(row=2, column=0)
-
     Button(main, text="Back", font="poppins 20 italic", bg=bgcolor, fg=fgcolor, border=0,
            command=lambda: vendor()).grid(row=2, column=1)
 def vendor():
@@ -910,12 +908,18 @@ def vendor():
     Button(main, text="delete  product", font="poppins 20 italic", bg=bgcolor, fg=fgcolor, border=0,command=deletewhat).grid(row=2,sticky=N)
     Button(main, text="read new product", font="poppins 20 italic", bg=bgcolor, fg=fgcolor, border=0,command=read).grid(row=3,sticky=N)
     main.pack()
-
-def signup():
+def signin():
     global id,key,usertype
-    id=uid.get()
-    key=password.get()
-    usertype=user.get()
+    try:
+        id=uid.get()
+        key=password.get()
+        usertype=user.get()
+    except:
+            id=mail_entry.get()
+            key=password_entry.get()
+            usertype=acc.get() 
+            main.destroy()
+
     if(id!='' and key!='' and  usertype!="select type"):
         connect=establish()
         mycursor=connect.cursor()
@@ -925,17 +929,48 @@ def signup():
             login.destroy() 
             if data[-1] =="customer":
                 customer(id)
-                
             else :
                 vendor()
-
         else:
             messagebox.showerror("error","no such user is detected")
         connect.commit()
         connect.close()
     else:
         messagebox.showwarning("info","all field are required")
-
+def newacc():
+    global main
+    mail=mail_entry.get()
+    key=password_entry.get()
+    account=acc.get()
+    if mail!="" and key !="" and account!="select type":
+        try:
+            conn=establish()
+            mycursor=conn.cursor()
+            mycursor.execute(f"INSERT INTO `user`(`phone`, `passkey`, `type`) VALUES ('{mail}','{key}','{account}')")
+            conn.commit()
+            conn.close()
+            messagebox.showinfo("info","account created successfully")
+            signin()
+        except Exception as e:
+            messagebox.showerror("error",e)
+def signup():
+    global login,mail_entry,password_entry,acc,main
+    login.destroy()
+    main = Frame(root, background=bgcolor)
+    Label(main, text="Create New Account",font="stencil 30 bold", bg=bgcolor,fg="wheat").grid(row=0, column=0, columnspan=3)
+    Label(main, text="Mail: ", bg=bgcolor, fg=fgcolor).grid(row=1, column=0)
+    mail_entry = Entry(main, fg=bgcolor, bg=fgcolor, font="helvetica 13 italic", width=30)
+    mail_entry.grid(row=1, column=2, columnspan=2)
+    Label(main, text="Password: ", bg=bgcolor, fg=fgcolor).grid(row=2, column=0)
+    password_entry = Entry(main, fg=bgcolor, bg=fgcolor, font="helvetica 13 italic", show="*", width=30)
+    password_entry.grid(row=2, column=2, columnspan=2)
+    acctype = ["vendor", "customer"]
+    acc = StringVar()
+    Label(main, text="Account Type", fg=fgcolor, bg=bgcolor).grid(row=3, column=0)
+    acc.set("select type")
+    OptionMenu(main, acc, *acctype).grid(row=3, column=2, columnspan=2)
+    Button(main,text="Login",background=bgcolor,fg=fgcolor,font="stencil 15 bold",command=newacc).grid(row=4,columnspan=3,sticky=N)
+    main.pack(fill="x")
 login=Frame(root,background=bgcolor)
 img=Image.open(r"images\login.png")
 img=img.resize((550,400))
@@ -945,17 +980,16 @@ Label(login,text="Select : ",background=bgcolor,fg=fgcolor,font="poppins 20 bold
 user=StringVar()
 options=["customer","vendor"]
 OptionMenu(login,user,*options).grid(row=1,column=1,sticky=N)
-# user.set("select type")
-user.set("customer")
+user.set("select type")
 Label(login,text="UID : ",background=bgcolor,fg=fgcolor,font="poppins 20 bold").grid(row=2,column=0)
 uid=Entry(login,width=30,font="helvetica 15 italic")
 uid.grid(row=2,column=1,sticky=N)
-uid.insert(0,"2")
 Label(login,text="Password : ",background=bgcolor,fg=fgcolor,font="poppins 20 bold").grid(row=3,column=0)
 password=Entry(login,width=30,font="helvetica 15 italic",show="*")
 password.grid(row=3,column=1,sticky=N)
-password.insert(0,"1")
-Button(login,text="Login",background=bgcolor,fg=fgcolor,font="stencil 15 bold",command=signup).grid(row=4,columnspan=3,sticky=N)
+Button(login,text="Login",background=bgcolor,fg=fgcolor,font="stencil 15 bold",command=signin).grid(row=4,columnspan=3,sticky=N)
+login.pack(fill="y")
+Button(login,text="Sign Up",background=bgcolor,fg=fgcolor,font="stencil 15 bold",command=signup).grid(row=5,columnspan=3,sticky=N)
 login.pack(fill="y")
 foot()
 root.mainloop()
